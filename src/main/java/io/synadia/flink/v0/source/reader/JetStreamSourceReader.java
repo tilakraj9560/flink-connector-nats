@@ -16,8 +16,8 @@ import java.util.concurrent.*;
 public class JetStreamSourceReader<T> implements SourceReader<T, JetStreamSplit> {
     private final JetStream jetStream;  // JetStream instance
     private final List<JetStreamSplit> splits;  // Active splits (topics/partitions)
-    private final Map<String, Long> lastProcessedMessageIds = new HashMap<>();  // Keeps track of last message processed for each split
-    private final Map<String, JetStreamSubscription> subscriptions = new HashMap<>();  // Track pull subscriptions
+    private final Map<String, Long> lastProcessedMessageIds = new ConcurrentHashMap<>();  // Keeps track of the last message processed for each split
+    private final Map<String, JetStreamSubscription> subscriptions = new ConcurrentHashMap<>();
     private final PayloadDeserializer<T> payloadDeserializer;
     private final ThreadPoolExecutor executor;
 
@@ -30,8 +30,6 @@ public class JetStreamSourceReader<T> implements SourceReader<T, JetStreamSplit>
                 1,  2, 0L, TimeUnit.MILLISECONDS,
                 new LinkedBlockingQueue<Runnable>() // task queue
         );
-
-        System.out.println("Creating JetStreamSourceReader with splits: " + splits);
     }
 
     @Override
@@ -58,6 +56,7 @@ public class JetStreamSourceReader<T> implements SourceReader<T, JetStreamSplit>
     @Override
     public InputStatus pollNext(ReaderOutput<T> output) throws Exception {
         List<CompletableFuture<Void>> completableFutures = new ArrayList<>();
+        List<String> subscriptionsToRemove = new CopyOnWriteArrayList<>();
 
         // Poll messages from each active subscription
         for (Map.Entry<String, JetStreamSubscription> entry : subscriptions.entrySet()) {
@@ -67,26 +66,30 @@ public class JetStreamSourceReader<T> implements SourceReader<T, JetStreamSplit>
             CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
                 try {
                     // Fetch the next message (blocking until the message is available)
-                    List<Message> messages = subscription.fetch(100, Duration.ofSeconds(50));  // Fetch 1 message (pull-based)
+                    List<Message> messages = subscription.fetch(10, Duration.ofSeconds(50));  // Fetch 1 message (pull-based)
 
+
+                    // if messages are empty, remove the subscription
                     if (messages == null || messages.isEmpty()) {
+                        subscriptionsToRemove.remove(splitId);
                         return;
                     }
 
                     for (Message message : messages) {
                         // Acknowledge the message to indicate successful processing
-                        message.ackSync(Duration.ofSeconds(30));
+                        //message.ackSync(Duration.ofSeconds(10));
+                        message.ack();
 
                         // Process the message
                         output.collect(payloadDeserializer.getObject(message.getSubject(), message.getData(), message.getHeaders()));
 
-                        // Update the state with the last processed message ID
+                        // Update the state with the last processed stream seq
                         lastProcessedMessageIds.put(splitId, message.metaData().streamSequence());
                     }
 
                     System.out.println("Reading from subscription ended: " + subscription.getConsumerName());
                 } catch (Exception e) {
-                    // Log and rethrow to ensure the exception is caught correctly
+
                     System.out.println("Exception while processing message: " + e.getMessage());
                     throw new FlinkRuntimeException("Exception while processing message", e);
                 }
@@ -107,9 +110,17 @@ public class JetStreamSourceReader<T> implements SourceReader<T, JetStreamSplit>
             }
         }
 
-        // Return based on the results of the processing
         if (completableFutures.stream().anyMatch(CompletableFuture::isCompletedExceptionally)) {
-            return InputStatus.NOTHING_AVAILABLE;
+            return InputStatus.MORE_AVAILABLE;
+        }
+
+        for (String splitId : subscriptionsToRemove) {
+            subscriptions.get(splitId).unsubscribe();
+            subscriptions.remove(splitId);
+        }
+
+        if (subscriptions.isEmpty()) {
+            return InputStatus.END_OF_INPUT;
         }
 
         return InputStatus.MORE_AVAILABLE;
@@ -117,7 +128,7 @@ public class JetStreamSourceReader<T> implements SourceReader<T, JetStreamSplit>
 
     @Override
     public List<JetStreamSplit> snapshotState(long checkpointId) {
-        // Save the state (for example, last processed message ID) for each split
+        // Save the state for each split
         List<JetStreamSplit> snapshot = new ArrayList<>();
         for (JetStreamSplit split : splits) {
             long lastSeq = lastProcessedMessageIds.getOrDefault(split.splitId(), -1L);
@@ -140,7 +151,6 @@ public class JetStreamSourceReader<T> implements SourceReader<T, JetStreamSplit>
 
     @Override
     public void addSplits(List<JetStreamSplit> splits) {
-        System.out.println("Adding new splits: " + splits);
         this.splits.addAll(splits);
 
         int minNoOfThreads = this.splits.size();

@@ -5,10 +5,9 @@ package io.synadia.io.synadia.flink.v0;
 
 import io.nats.client.*;
 import io.nats.client.api.*;
-import io.synadia.flink.v0.NatsJetStreamSource;
-import io.synadia.flink.v0.JetStreamSourceBuilder;
 import io.synadia.flink.v0.payload.PayloadDeserializer;
 import io.synadia.flink.v0.payload.StringPayloadDeserializer;
+import io.synadia.flink.v0.source.JetStreamSourceBuilder;
 import io.synadia.io.synadia.flink.TestBase;
 import org.apache.flink.api.common.eventtime.WatermarkStrategy;
 import org.apache.flink.api.common.restartstrategy.RestartStrategies;
