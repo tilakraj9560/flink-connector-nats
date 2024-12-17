@@ -119,8 +119,8 @@ public class NatsSourceReader<OutputT> implements SourceReader<OutputT, NatsSubj
     @Override
     public String toString() {
         return "NatsSourceReader{" +
-            "id='" + id + '\'' +
-            ", subbedSplits=" + subbedSplits +
-            '}';
+                "id='" + id + '\'' +
+                ", subbedSplits=" + subbedSplits +
+                '}';
     }
 }

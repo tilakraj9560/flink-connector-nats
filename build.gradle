@@ -44,6 +44,8 @@ dependencies {
     implementation "org.apache.flink:flink-streaming-java:${flinkVersion}"
     implementation "org.apache.flink:flink-clients:${flinkVersion}"
     implementation "org.apache.flink:flink-connector-files:${flinkVersion}"
+    implementation 'org.projectlombok:lombok:1.18.24' // Add Lombok
+    annotationProcessor 'org.projectlombok:lombok:1.18.24' // Needed for annotation processing
 
     implementation 'org.slf4j:slf4j-api:2.0.9'
 

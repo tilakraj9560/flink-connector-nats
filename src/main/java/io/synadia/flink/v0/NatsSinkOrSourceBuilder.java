@@ -151,9 +151,9 @@ public abstract class NatsSinkOrSourceBuilder<SerializeT, BuilderT> {
 
     protected ConnectionFactory createConnectionFactory() {
         return new ConnectionFactory(
-            connectionProperties,
-            connectionPropertiesFile,
-            minConnectionJitter,
-            maxConnectionJitter);
+                connectionProperties,
+                connectionPropertiesFile,
+                minConnectionJitter,
+                maxConnectionJitter);
     }
 }

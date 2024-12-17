@@ -28,8 +28,8 @@ import static io.synadia.flink.utils.MiscUtils.generateId;
  * @param <OutputT> the type of object to convert message payload data to
  */
 public class NatsSource<OutputT> implements
-    Source<OutputT, NatsSubjectSplit, Collection<NatsSubjectSplit>>,
-    ResultTypeQueryable<OutputT>
+        Source<OutputT, NatsSubjectSplit, Collection<NatsSubjectSplit>>,
+        ResultTypeQueryable<OutputT>
 {
     protected final String id;
     protected final List<String> subjects;
@@ -64,7 +64,7 @@ public class NatsSource<OutputT> implements
 
     @Override
     public SplitEnumerator<NatsSubjectSplit, Collection<NatsSubjectSplit>> createEnumerator(
-        SplitEnumeratorContext<NatsSubjectSplit> enumContext) throws Exception
+            SplitEnumeratorContext<NatsSubjectSplit> enumContext) throws Exception
     {
         logger.debug("{} | createEnumerator", id);
         List<NatsSubjectSplit> list = new ArrayList<>();
@@ -76,8 +76,8 @@ public class NatsSource<OutputT> implements
 
     @Override
     public SplitEnumerator<NatsSubjectSplit, Collection<NatsSubjectSplit>> restoreEnumerator(
-        SplitEnumeratorContext<NatsSubjectSplit> enumContext,
-        Collection<NatsSubjectSplit> checkpoint)
+            SplitEnumeratorContext<NatsSubjectSplit> enumContext,
+            Collection<NatsSubjectSplit> checkpoint)
     {
         logger.debug("{} | restoreEnumerator", id);
         return new NatsSourceEnumerator(id, enumContext, checkpoint);
@@ -109,10 +109,10 @@ public class NatsSource<OutputT> implements
     @Override
     public String toString() {
         return "NatsSource{" +
-            "id='" + id + '\'' +
-            ", subjects=" + subjects +
-            ", payloadDeserializer=" + payloadDeserializer.getClass().getCanonicalName() +
-            ", connectionFactory=" + connectionFactory +
-            '}';
+                "id='" + id + '\'' +
+                ", subjects=" + subjects +
+                ", payloadDeserializer=" + payloadDeserializer.getClass().getCanonicalName() +
+                ", connectionFactory=" + connectionFactory +
+                '}';
     }
 }

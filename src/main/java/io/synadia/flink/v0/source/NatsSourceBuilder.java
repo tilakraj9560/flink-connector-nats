@@ -1,5 +1,5 @@
 // Copyright (c) 2023-2024 Synadia Communications Inc. All Rights Reserved.
-// See LICENSE and NOTICE file for details. 
+// See LICENSE and NOTICE file for details.
 
 package io.synadia.flink.v0.source;
 
@@ -101,6 +101,7 @@ public class NatsSourceBuilder<OutputT> extends NatsSinkOrSourceBuilder<OutputT,
                 throw new IllegalStateException("Valid payload serializer class must be provided.", e);
             }
         }
+
         baseBuild();
         return new NatsSource<>(payloadDeserializer, createConnectionFactory(), subjects);
     }

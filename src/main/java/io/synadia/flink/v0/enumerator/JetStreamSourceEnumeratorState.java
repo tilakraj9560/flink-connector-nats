@@ -3,21 +3,21 @@
 
 package io.synadia.flink.v0.enumerator;
 
-import io.synadia.flink.v0.source.split.NatsSubjectSplit;
+import io.synadia.flink.v0.source.split.JetStreamSplit;
 import org.apache.flink.annotation.Internal;
 
 import java.util.Set;
 
 /** The state of Nats source enumerator. */
 @Internal
-public class NatsSubjectSourceEnumeratorState {
-    private final Set<NatsSubjectSplit> unassignedSplits;
+public class JetStreamSourceEnumeratorState {
+    private final Set<JetStreamSplit> unassignedSplits;
 
-    public NatsSubjectSourceEnumeratorState(Set<NatsSubjectSplit> unassignedSplits) {
+    public JetStreamSourceEnumeratorState(Set<JetStreamSplit> unassignedSplits) {
         this.unassignedSplits = unassignedSplits;
     }
 
-    public Set<NatsSubjectSplit> getUnassignedSplits() {
+    public Set<JetStreamSplit> getUnassignedSplits() {
         return unassignedSplits;
     }
 }

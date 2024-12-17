@@ -3,7 +3,8 @@
 
 package io.synadia.flink.v0.enumerator;
 
-import io.synadia.flink.v0.source.split.NatsSubjectSplit;
+import io.synadia.flink.v0.source.split.JetStreamSplit;
+//import io.synadia.flink.v0.source.split.NatsSubjectSplit;
 import org.apache.flink.api.connector.source.SplitEnumerator;
 import org.apache.flink.api.connector.source.SplitEnumeratorContext;
 
@@ -13,19 +14,13 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Queue;
 
-import static io.synadia.flink.utils.MiscUtils.generatePrefixedId;
 import static org.apache.flink.util.Preconditions.checkNotNull;
 
-public class NatsSourceEnumerator implements SplitEnumerator<NatsSubjectSplit, Collection<NatsSubjectSplit>> {
-    private final String id;
-    private final SplitEnumeratorContext<NatsSubjectSplit> context;
-    private final Queue<NatsSubjectSplit> remainingSplits;
+public class JetStreamSourceEnumerator implements SplitEnumerator<JetStreamSplit, Collection<JetStreamSplit>> {
+    private final SplitEnumeratorContext<JetStreamSplit> context;
+    private final Queue<JetStreamSplit> remainingSplits;
 
-    public NatsSourceEnumerator(String sourceId,
-                                SplitEnumeratorContext<NatsSubjectSplit> context,
-                                Collection<NatsSubjectSplit> splits)
-    {
-        id = generatePrefixedId(sourceId);
+    public JetStreamSourceEnumerator(SplitEnumeratorContext<JetStreamSplit> context, Collection<JetStreamSplit> splits) {
         this.context = checkNotNull(context);
         this.remainingSplits = splits == null ? new ArrayDeque<>() : new ArrayDeque<>(splits);
     }
@@ -40,7 +35,7 @@ public class NatsSourceEnumerator implements SplitEnumerator<NatsSubjectSplit, C
 
     @Override
     public void handleSplitRequest(int subtaskId, @Nullable String requesterHostname) {
-        final NatsSubjectSplit nextSplit = remainingSplits.poll();
+        final JetStreamSplit nextSplit = remainingSplits.poll();
         if (nextSplit != null) {
             context.assignSplit(nextSplit, subtaskId);
         }
@@ -50,7 +45,7 @@ public class NatsSourceEnumerator implements SplitEnumerator<NatsSubjectSplit, C
     }
 
     @Override
-    public void addSplitsBack(List<NatsSubjectSplit> splits, int subtaskId) {
+    public void addSplitsBack(List<JetStreamSplit> splits, int subtaskId) {
         remainingSplits.addAll(splits);
     }
 
@@ -60,7 +55,7 @@ public class NatsSourceEnumerator implements SplitEnumerator<NatsSubjectSplit, C
     }
 
     @Override
-    public Collection<NatsSubjectSplit> snapshotState(long checkpointId) throws Exception {
+    public Collection<JetStreamSplit> snapshotState(long checkpointId) throws Exception {
         return remainingSplits;
     }
 }

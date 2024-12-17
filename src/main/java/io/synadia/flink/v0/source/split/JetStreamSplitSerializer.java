@@ -28,11 +28,11 @@ import org.apache.flink.core.memory.DataOutputView;
 import java.io.IOException;
 
 /**
- * Serializes and deserializes the {@link NatsSubjectSplit}. This class needs to handle
+ * Serializes and deserializes the {@link JetStreamSplit}. This class needs to handle
  * deserializing splits from older versions.
  */
 @Internal
-public class NatsSubjectSplitSerializer implements SimpleVersionedSerializer<NatsSubjectSplit> {
+public class JetStreamSplitSerializer implements SimpleVersionedSerializer<JetStreamSplit> {
 
     public static final int CURRENT_VERSION = 1;
 
@@ -42,19 +42,19 @@ public class NatsSubjectSplitSerializer implements SimpleVersionedSerializer<Nat
     }
 
     @Override
-    public byte[] serialize(NatsSubjectSplit split) throws IOException {
+    public byte[] serialize(JetStreamSplit split) throws IOException {
         final DataOutputSerializer out =
-                new DataOutputSerializer(split.splitId().length());
+            new DataOutputSerializer(split.splitId().length());
         serializeV1(out, split);
         return out.getCopyOfBuffer();
     }
 
-    public static void serializeV1(DataOutputView out, NatsSubjectSplit split) throws IOException {
+    public static void serializeV1(DataOutputView out, JetStreamSplit split) throws IOException {
         out.writeUTF(split.splitId());
     }
 
     @Override
-    public NatsSubjectSplit deserialize(int version, byte[] serialized) throws IOException {
+    public JetStreamSplit deserialize(int version, byte[] serialized) throws IOException {
         if (version != CURRENT_VERSION) {
             throw new IOException("Unrecognized version: " + version);
         }
@@ -62,7 +62,19 @@ public class NatsSubjectSplitSerializer implements SimpleVersionedSerializer<Nat
         return deserializeV1(in);
     }
 
-    static NatsSubjectSplit deserializeV1(DataInputView in) throws IOException {
-        return new NatsSubjectSplit(in.readUTF());
+    static JetStreamSplit deserializeV1(DataInputView in) throws IOException {
+        String input = in.readUTF();
+        String[] elements = input.split("_");
+
+
+        if (elements.length != 2) {
+            throw new IOException("Invalid split format: " + input);
+        }
+
+        String subject = elements[0];
+        String consumerName = elements[1];
+
+
+        return new JetStreamSplit(subject, consumerName);
     }
 }

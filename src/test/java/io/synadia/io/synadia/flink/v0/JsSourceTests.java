@@ -6,7 +6,7 @@ package io.synadia.io.synadia.flink.v0;
 import io.nats.client.*;
 import io.nats.client.api.*;
 import io.synadia.flink.v0.NatsJetStreamSource;
-import io.synadia.flink.v0.NatsJetStreamSourceBuilder;
+import io.synadia.flink.v0.JetStreamSourceBuilder;
 import io.synadia.flink.v0.payload.PayloadDeserializer;
 import io.synadia.flink.v0.payload.StringPayloadDeserializer;
 import io.synadia.flink.v0.sink.NatsSink;
@@ -63,8 +63,8 @@ public class JsSourceTests extends TestBase {
             // --------------------------------------------------------------------------------
             Properties connectionProperties = defaultConnectionProperties(url);
             PayloadDeserializer<String> deserializer = new StringPayloadDeserializer();
-            NatsJetStreamSourceBuilder<String> builder =
-                new NatsJetStreamSourceBuilder<String>()
+            JetStreamSourceBuilder<String> builder =
+                new JetStreamSourceBuilder<String>()
                     .subjects(sourceSubject)
                     .payloadDeserializer(deserializer)
                     .connectionProperties(connectionProperties)
@@ -114,7 +114,7 @@ public class JsSourceTests extends TestBase {
             // --------------------------------------------------------------------------------
             Properties connectionProperties = defaultConnectionProperties(url);
             PayloadDeserializer<String> deserializer = new StringPayloadDeserializer();
-            NatsJetStreamSourceBuilder<String> builder = new NatsJetStreamSourceBuilder<String>()
+            JetStreamSourceBuilder<String> builder = new JetStreamSourceBuilder<String>()
                 .subjects(sourceSubject)
                 .payloadDeserializer(deserializer)
                 .connectionProperties(connectionProperties)
