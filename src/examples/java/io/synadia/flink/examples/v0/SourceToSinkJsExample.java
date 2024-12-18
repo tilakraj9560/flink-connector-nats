@@ -96,10 +96,10 @@ public class SourceToSinkJsExample {
         env.setRestartStrategy(RestartStrategies.fixedDelayRestart(5, Time.seconds(5)));
 
         // Execute Flink pipeline asynchronously
-        env.executeAsync("JetStream Source-to-Sink Example");
+        env.execute("JetStream Source-to-Sink Example");
 
         // Allow the job to run for 20 seconds
-        Thread.sleep(20_000);
+        //Thread.sleep(60_000);
 
         // Gracefully close the dispatcher and Flink environment
         dispatcher.unsubscribe(sinkSubject);

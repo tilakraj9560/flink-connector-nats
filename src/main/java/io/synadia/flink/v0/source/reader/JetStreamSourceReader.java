@@ -64,61 +64,57 @@ public class JetStreamSourceReader<T> implements SourceReader<T, JetStreamSplit>
             JetStreamSubscription subscription = entry.getValue();
 
             CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
-                try {
-                    // Fetch the next message (blocking until the message is available)
-                    List<Message> messages = subscription.fetch(10, Duration.ofSeconds(50));  // Fetch 1 message (pull-based)
+                // Fetch the next message (blocking until the message is available)
+                List<Message> messages = subscription.fetch(10, Duration.ofSeconds(50));  // Fetch 1 message (pull-based)
 
+                // If messages are empty, remove the subscription
+                if (messages == null || messages.isEmpty()) {
+                    subscriptionsToRemove.add(splitId);
+                    return;
+                }
 
-                    // if messages are empty, remove the subscription
-                    if (messages == null || messages.isEmpty()) {
-                        subscriptionsToRemove.remove(splitId);
-                        return;
+                for (Message message : messages) {
+                    // Process the message
+                    output.collect(payloadDeserializer.getObject(message.getSubject(), message.getData(), message.getHeaders()));
+
+                    try {
+                        message.ackSync(Duration.ofSeconds(10));
+                    } catch (Exception e) {
+                        // Log and retry logic can be added here if ack fails
+                        System.out.println("Failed to ack message: " + e.getMessage());
                     }
 
-                    for (Message message : messages) {
-                        // Acknowledge the message to indicate successful processing
-                        //message.ackSync(Duration.ofSeconds(10));
-                        message.ack();
-
-                        // Process the message
-                        output.collect(payloadDeserializer.getObject(message.getSubject(), message.getData(), message.getHeaders()));
-
-                        // Update the state with the last processed stream seq
-                        lastProcessedMessageIds.put(splitId, message.metaData().streamSequence());
-                    }
-
-                    System.out.println("Reading from subscription ended: " + subscription.getConsumerName());
-                } catch (Exception e) {
-
-                    System.out.println("Exception while processing message: " + e.getMessage());
-                    throw new FlinkRuntimeException("Exception while processing message", e);
+                    // Update the state with the last processed stream seq
+                    lastProcessedMessageIds.put(splitId, message.metaData().streamSequence());
                 }
             }, executor);
 
             completableFutures.add(future);
         }
 
+        // Wait for all futures to complete
         CompletableFuture<Void> allOf = CompletableFuture.allOf(completableFutures.toArray(new CompletableFuture[0]));
-        allOf.join();
+        allOf.join();  // Wait for all completions
 
+        // Handle any errors in futures
         for (CompletableFuture<Void> future : completableFutures) {
             try {
-                future.get();
+                future.get();  // Ensure to catch any exceptions
             } catch (Exception e) {
-                // Handle exception if any future failed
                 throw new FlinkRuntimeException("Exception occurred during polling", e);
             }
         }
 
-        if (completableFutures.stream().anyMatch(CompletableFuture::isCompletedExceptionally)) {
-            return InputStatus.MORE_AVAILABLE;
-        }
-
+        // Remove subscriptions that had no messages
         for (String splitId : subscriptionsToRemove) {
-            subscriptions.get(splitId).unsubscribe();
-            subscriptions.remove(splitId);
+            JetStreamSubscription subscriptionToRemove = subscriptions.get(splitId);
+            if (subscriptionToRemove != null) {
+                subscriptionToRemove.unsubscribe();
+                subscriptions.remove(splitId);
+            }
         }
 
+        // Check if no subscriptions are left
         if (subscriptions.isEmpty()) {
             return InputStatus.END_OF_INPUT;
         }
